@@ -10,15 +10,30 @@ clock = pygame.time.Clock()
 SCREEN   = pygame.display.set_mode((600 , 700))
 BG_IMAGE = pygame.image.load('LUDO_BOARD.jpg') 
 class SubUnit:
+
+    # Home positions
+    green_home  = {1: [77, 80], 2: [147, 80], 3: [77, 147], 4: [147, 147]}
+    yellow_home = {1: [433, 80], 2: [503, 80], 3: [433, 147], 4: [504, 147]}
+    blue_home   = {1: [433, 438], 2: [503, 438], 3: [433, 505], 4: [504, 505]}
+    red_home    = {1: [77, 438], 2: [147, 438], 3: [77, 505], 4: [147, 505]}
+    home_mapper = {
+        'GREEN' : green_home , 'YELLOW' : yellow_home ,
+        'BLUE'  : blue_home  , 'RED'    : red_home    ,
+    }
+
+
     lis_green  = [[55, 248], [93, 248], [131, 248], [169, 248], [207, 248], [245, 248],  [245, 209], [245, 170], [245, 131], [245, 92], [245, 53], [245, 16], [290, 16], [335, 16]]
     lis_yellow = [[335, 55], [335, 92], [335, 129], [335, 166], [335, 203], [335, 246], [373, 246], [411, 246], [449, 246], [487, 246], [525, 246], [563, 246], [563, 290], [563, 335]]
     lis_blue   = [[525, 335], [487, 335], [449, 335], [411, 335], [373, 335], [335, 335], [335, 373], [335, 411], [335, 449], [335, 487], [335, 525], [335, 563], [290, 563], [246, 563]]
     lis_red    = [[246, 525], [246, 488], [246, 451], [246, 414], [246, 377], [246, 335], [208, 335], [170, 335], [132, 335], [94, 335], [56, 335], [18, 335], [18, 291], [18, 248]]
-    co_ordinator = lis_green + lis_yellow + lis_blue + lis_red
+    co_ordinator = lis_green + lis_yellow + lis_blue + lis_red 
+    initial_pos = {'GREEN' : 0 , 'YELLOW' : 13 ,
+                   'BLUE' : 26 , 'BLUE'   : 39 , 
+                    }
     # Setting RGB vals for colours
     RED     = (255 , 0   , 0  ) 
     GREEN   = (0   , 128 , 0  )
-    BLUE    = (255 , 0   , 0  )
+    BLUE    = (0   , 0   , 255)
     YELLOW  = (255 , 255 , 0  ) 
     BLACK   = (0   , 0   , 0  )
     Colours = {
@@ -30,23 +45,18 @@ class SubUnit:
         self.colour   = self.Colours[colour]
         self.number   = number
         self.position = -1 # Means it is at home
+        self.home_x   = self.home_mapper[colour][number][0] # home x co-ordinate 
+        self.home_y   = self.home_mapper[colour][number][1] # home y co-ordinate
+        self.blit(self.home_x , self.home_y)
          
 
-    def blit(self):
-        x , y = 12 , 12
-        lis_red_home    = [[77 , 438 , 1 , 0 , 0] , [147 ,438 , 2 , 0 , 0] , [77 , 505 , 3 , 0 , 0] , [147 , 505 , 4 , 0 , 0]]
-        lis_green_home  = [[77 , 80 , 1 , 0 , 0] , [147 , 80 , 2 , 0 , 0] , [77 , 147 , 3 , 0 , 0] , [147 , 147 , 4 , 0 , 0]]
-        lis_yellow_home = [[433 , 80 , 1 , 0 , 0] , [503 , 80 , 2 , 0 , 0] , [433 , 147 , 3 , 0 , 0] , [504 , 147 , 4 , 0 , 0]]
-        lis_blue_home   = [[433 , 438 , 1 , 0 , 0] , [503 , 438 , 2 , 0 , 0] , [433 , 505 , 3 , 0 , 0] , [504 , 505 , 4 , 0 , 0]]
-
-        for lis in  [lis_red_home , lis_blue_home ,  lis_green_home ,  lis_yellow_home]:
-            for sub_lis in lis:
-                x , y = sub_lis[0] , sub_lis[1]
-                pygame.draw.rect(SCREEN , self.BLACK  ,  (x - 2 , y - 2 , 25 , 25))
-                pygame.draw.rect(SCREEN , self.colour ,  (x , y , 20  , 20 ))
-                font = pygame.font.SysFont('comicsansms' , 20)
-                text = font.render( str(self.number) , True , (0 , 0 , 0))
-                SCREEN.blit(text , (x + 4   , y - 5  ))
+    def blit(self , x , y):
+        print("main call ho ra hu")
+        pygame.draw.rect(SCREEN , self.BLACK  ,  (x - 2 , y - 2 , 25 , 25))
+        pygame.draw.rect(SCREEN , self.colour ,  (x , y , 20  , 20 ))
+        font = pygame.font.SysFont('comicsansms' , 20)
+        text = font.render( str(self.number) , True , (0 , 0 , 0))
+        SCREEN.blit(text , (x + 4   , y - 5  ))
 
     def move_(self , move_steps):
         if self.position == -1 and self.move_steps == 6:
@@ -87,6 +97,7 @@ class Player(SubUnit):
 
 # Creating 4 Player Objects
 #******************************
+SCREEN.blit(BG_IMAGE , (0 , 0))
 green_player  = Player("GREEN")
 yellow_player = Player("YELLOW")
 blue_player   = Player("BLUE")
@@ -140,9 +151,6 @@ def move_decider(player_object):
 
 while True:
     clock.tick(5) # Limit the number of frame per second
-    SCREEN.blit(BG_IMAGE , (0 , 0))
-    p = Player("RED")
-    p.blit_sub_units()
 
 
     for event in pygame.event.get():
