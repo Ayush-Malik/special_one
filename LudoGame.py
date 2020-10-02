@@ -30,6 +30,16 @@ class SubUnit:
     yellow_home = {1: [433, 80] , 2: [503, 80] , 3: [433, 147], 4: [504, 147]}
     blue_home   = {1: [433, 438], 2: [503, 438], 3: [433, 505], 4: [504, 505]}
     red_home    = {1: [77, 438] , 2: [147, 438], 3: [77, 505] , 4: [147, 505]}
+
+
+    lis_end_green = [[55, 291]  , [93, 291]  , [131, 291] , [169 , 291] , [207 , 291]] 
+    lis_end_yellow  = [[290, 55]  , [290, 92]  , [290, 129] , [290, 166]  , [290, 203]]
+    lis_end_blue  = [[525, 291] , [487, 291] , [449, 291] , [411 , 291] , [373 , 291]] 
+    lis_end_red   = [[290, 525] , [290, 488] , [290, 451] , [290, 414]  , [290, 377]]
+    end_mapper  = {
+        'GREEN' : lis_end_green , 'YELLOW' : lis_end_yellow ,
+        'BLUE'  : lis_end_blue  , 'RED'    : lis_end_red    ,
+    }    
     home_mapper = {
         'GREEN' : green_home , 'YELLOW' : yellow_home ,
         'BLUE'  : blue_home  , 'RED'    : red_home    ,
@@ -55,8 +65,11 @@ class SubUnit:
         'RED' : RED  , 'GREEN' : GREEN ,
         'BLUE': BLUE , 'YELLOW': YELLOW,
     }  
-    # for i in range(5000):
-    #     for val in co_ordinator:
+
+    # SCREEN.blit(BG_IMAGE , (0 , 0))
+    # for i in range(400):
+
+    #     for val in lis:
     #         x , y = val
     #         pygame.draw.rect(SCREEN , BLACK  ,  (x - 2 , y - 2 , 25 , 25))
     #         pygame.draw.rect(SCREEN , RED ,  (x , y , 20  , 20 ))
@@ -72,20 +85,27 @@ class SubUnit:
         self.home_x      = self.home_mapper[colour][number][0] # home x co-ordinate 
         self.home_y      = self.home_mapper[colour][number][1] # home y co-ordinate
         self.initial_pos = self.map_initial_pos[colour]
+        self.end_line    = self.end_mapper[colour]
         self.blit()
          
 
     def blit(self):    
-        if self.position == -1: # Means SubUnit is currently at home_pos                
-            x , y = self.home_x , self.home_y
-        else:
-            x , y = self.co_ordinator[( self.position + self.initial_pos) % len(self.co_ordinator)] 
+        if self.position < 48:
+            if self.position == -1: # Means SubUnit is currently at home_pos                
+                x , y = self.home_x , self.home_y
+            else:
+                x , y = self.co_ordinator[( self.position + self.initial_pos) % len(self.co_ordinator)] 
+        else: # Entry in end line -> SAFE ZONE
+            x , y = self.end_line[self.position % 48]
+
+
     
         pygame.draw.rect(SCREEN , self.BLACK  ,  (x - 2 , y - 2 , 25 , 25))
         pygame.draw.rect(SCREEN , self.colour ,  (x , y , 20  , 20 ))
         font = pygame.font.SysFont('comicsansms' , 20)
         text = font.render( str(self.number) , True , self.BLACK)
         SCREEN.blit(text , (x + 4   , y - 5  ))
+    
         # pygame.display.update()
         print(f"Blitting completed {x} {y}")
 
@@ -102,7 +122,10 @@ class SubUnit:
             for i in range(move_steps):
                 clock.tick(1) # Limit the number of frame per second
                 self.position += 1
-                self.blit()
+
+                if self.position < 48 or (move_steps + self.position == 53) :
+                    self.blit()
+                    # TODO -> msg daalna hai --> "Can't move ahead becuase of less number of move_steps
                 blit_everything_updated()
 
     @_place_black_box
@@ -145,7 +168,20 @@ class Player(SubUnit):
         self.sub_unit_1.blit()
         
     def generate_random_number_and_then_move(self):
-        self.move_decider(random.randint(1 , 6))
+        random_num = random.randint(1 , 6)
+        random_number_msg = ("Random Number is :  " + str(random_num) , (200 , 620)) 
+        warning_msg       = ("None of your sub_units is out from home" , (110 , 660))
+
+        all_sub_units_at_home , availables =  self.check_if_any_sub_unit_is_available_to_move() 
+        if all_sub_units_at_home and random_num == 6: 
+            self.blit_messages( random_number_msg )
+            self.move_decider(random_num)
+        elif not all_sub_units_at_home:
+            self.blit_messages( random_number_msg )
+            self.move_decider(random_num)
+        else:
+            self.blit_messages( random_number_msg  , warning_msg  )
+            return 
         # self.move_decider(6)
 
     def move_decider(self , random_num):
@@ -155,7 +191,7 @@ class Player(SubUnit):
         >>> And then calls move(sub_unit to be moved , move_steps) method of Player object
         """
         print(f"Random number is {random_num} and colour is {self.colour}")
-        self.blit_random_number(random_num)
+        # self.blit_random_number(random_num)
 
 
         while True:
@@ -190,55 +226,51 @@ class Player(SubUnit):
                     >>> return (False , [])
         """
         availables =  [sub_unit  for number , sub_unit in self.sub_units.items()  if sub_unit.position != -1] 
-        return  ( len(availables) != 0 , availables  )
+        return  ( len(availables) == 0 , availables  )
 
 
 
     
     def move(self , sub_unit_number , move_steps):
         sub_unit_object = self.sub_units[sub_unit_number]
-        bool_val , available_sub_units = self.check_if_any_sub_unit_is_available_to_move()
+        all_sub_units_at_home , available_sub_units = self.check_if_any_sub_unit_is_available_to_move()
+        random_number_msg = ("Random Number is : " +  str(move_steps) , (200 , 620))  
+        warning_msg       = ("Try another one !!!" , (240 , 660))  
 
-        if sub_unit_object.position == -1 :
+
+        if sub_unit_object.position == -1 : # If sub_unit is at home
             if move_steps == 6:
                 sub_unit_object.move_(move_steps)
             else:
-                bool_val , available_sub_units = self.check_if_any_sub_unit_is_available_to_move()
-                if bool_val:
-                    string = [ str(sub_unit.number) for sub_unit in available_sub_units]
-                    self.blit_warning( "Try Another One from " + ",".join(string) , (100 , 660))
-                    self.move_decider(move_steps)
-                else:
-                    self.blit_warning( "None of your sub_unit is out from home" , (110 , 660) )
-                    return
+                self.blit_messages( random_number_msg  , warning_msg )
+                self.move_decider(move_steps)
+                # if all_sub_units_at_home:
+                #     string = [ str(sub_unit.number) for sub_unit in available_sub_units]
+                #     self.move_decider(move_steps)
+                # else:
+                #     self.blit_messages( "None of your sub_unit is out from home" , (110 , 660) )
+                #     return
 
         else:
             sub_unit_object.move_(move_steps)
 
 
 
-        # if sub_unit_object.position == -1  and  move_steps != 6:
-        #     if not bool_val:
-        #         self.blit_warning( "None of your sub_unit is out from home" , (110 , 660) )
-        #         return
 
-        # if bool_val:
-        #     string = [ str(sub_unit.number) for sub_unit in available_sub_units]
-        #     self.blit_warning( "Try Another One from " + ",".join(string) , (10 , 660))
-        #     # self.blit_warning("Try Another SubUnit")
-        #     self.move_decider(move_steps)
-        # sub_unit_object.move_(move_steps)
-        # print("Mai return ho gya hu")
-        # self.blit_everything_updated()
 
     @_place_black_box
-    def blit_warning(self , msg , co_ordinates):
-        x , y = co_ordinates
-        font = pygame.font.SysFont('comicsansms' , 20)
-        text = font.render(msg ,  True , self.colour)
-        SCREEN.blit(text , (x , y))
-        pygame.display.update()
-
+    def blit_messages(self , *args):
+        for msg in args:
+            text , co_ordinates = msg
+            print('-'*30)
+            print(msg)
+            print('-'*30)
+            x , y = co_ordinates
+            font = pygame.font.SysFont('comicsansms' , 20)
+            text = font.render(text ,  True , self.colour)
+            SCREEN.blit(text , (x , y))
+            pygame.display.update()
+            clock.tick(1)
 
     def blit_all_sub_units(self):
         for key , sub_unit in self.sub_units.items():
@@ -268,62 +300,6 @@ def blit_everything_updated():
     for player in players:
         player.blit_all_sub_units()
     pygame.display.update()
-# def blit_random_number(random_num , colour):
-#     """
-#     >>> Blits random number given as an argumnet and its text colour[based on Player colour]
-#     """
-#     font = pygame.font.SysFont('comicsansms' , 20)
-#     text = font.render("Random Number is : " + str( random_num ) , True , colour)
-#     SCREEN.blit(text , (200 , 620))
-#     pygame.display.update()
-
-
-
-
-
-# def move_decider(player_object):
-#     """
-#     >>> It takes player object as an argument and generates random number for it
-#     >>> After that it takes the SubUnit number from user which he wants to move
-#     >>> And then calls move(sub_unit to be moved , move_steps) method of Player object
-#     """
-#     random_num = player_object.generate_random_number()
-#     print(f"Random number is {random_num} and colour is {player_object.colour}")
-#     blit_random_number(random_num , player_object.colour)
-
-
-#     while True:
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 pygame.quit()
-#                 exit()
-#             elif event.type == pygame.KEYDOWN:
-#                 if event.key == pygame.K_KP1 or event.key == pygame.K_1:
-#                     player_object.move(1 , random_num)
-#                     print("1 is pressed")
-#                     return
-#                 elif event.key == pygame.K_KP2 or event.key == pygame.K_2:
-#                     player_object.move(2 , random_num)
-#                     print("2 is pressed")
-#                     return
-#                 elif event.key == pygame.K_KP3 or event.key == pygame.K_3:
-#                     player_object.move(3 ,  random_num)
-#                     print("3 is pressed")
-#                     return
-#                 elif event.key == pygame.K_KP4 or event.key == pygame.K_4:
-#                     player_object.move(4 , random_num)
-#                     print("4 is pressed") 
-#                     return 
-    
-
-# def blit_everything_updated():
-#     SCREEN.blit(BG_IMAGE , (0 , 0))
-#     for player in players:
-#         player.blit_all_sub_units()
-    
-        
-    
-
 
 
 
