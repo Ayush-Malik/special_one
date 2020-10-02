@@ -11,6 +11,13 @@ def _place_black_box(function):
         function(*args)
     return inner_function
 
+# def show_random_list(function):
+#     def inner_function(*args):
+#         string = ",".join ([str(val) for val in self.random_list])
+#         random_number_msg = ("Random numbers : " + string , (150 , 620))
+#         function(*args)
+#     return inner_function
+
 
 # creates a clock
 clock = pygame.time.Clock()
@@ -32,10 +39,10 @@ class SubUnit:
     red_home    = {1: [77, 438] , 2: [147, 438], 3: [77, 505] , 4: [147, 505]}
 
 
-    lis_end_green = [[55, 291]  , [93, 291]  , [131, 291] , [169 , 291] , [207 , 291]] 
-    lis_end_yellow  = [[290, 55]  , [290, 92]  , [290, 129] , [290, 166]  , [290, 203]]
-    lis_end_blue  = [[525, 291] , [487, 291] , [449, 291] , [411 , 291] , [373 , 291]] 
-    lis_end_red   = [[290, 525] , [290, 488] , [290, 451] , [290, 414]  , [290, 377]]
+    lis_end_green  = [[55, 291]  , [93, 291]  , [131, 291] , [169 , 291] , [207 , 291]] 
+    lis_end_yellow = [[290, 55]  , [290, 92]  , [290, 129] , [290, 166]  , [290, 203]]
+    lis_end_blue   = [[525, 291] , [487, 291] , [449, 291] , [411 , 291] , [373 , 291]] 
+    lis_end_red    = [[290, 525] , [290, 488] , [290, 451] , [290, 414]  , [290, 377]]
     end_mapper  = {
         'GREEN' : lis_end_green , 'YELLOW' : lis_end_yellow ,
         'BLUE'  : lis_end_blue  , 'RED'    : lis_end_red    ,
@@ -44,6 +51,7 @@ class SubUnit:
         'GREEN' : green_home , 'YELLOW' : yellow_home ,
         'BLUE'  : blue_home  , 'RED'    : red_home    ,
     }
+
 
 
     lis_green  = [[55, 248] , [93, 248] , [131, 248], [169, 248], [207, 248],  [245, 209], [245, 170], [245, 131], [245, 92] , [245, 53] , [245, 16] , [290, 16] , [335, 16]]
@@ -86,17 +94,21 @@ class SubUnit:
         self.home_y      = self.home_mapper[colour][number][1] # home y co-ordinate
         self.initial_pos = self.map_initial_pos[colour]
         self.end_line    = self.end_mapper[colour]
+        self.is_active   = True # will be changed to False when sub_unit reaches target
+        self.position    = 0
+        print(colour)
+        if colour == 'RED':
+            self.position = 12
         self.blit()
-         
 
     def blit(self):    
-        if self.position < 48:
+        if self.position < 51:
             if self.position == -1: # Means SubUnit is currently at home_pos                
                 x , y = self.home_x , self.home_y
             else:
                 x , y = self.co_ordinator[( self.position + self.initial_pos) % len(self.co_ordinator)] 
         else: # Entry in end line -> SAFE ZONE
-            x , y = self.end_line[self.position % 48]
+            x , y = self.end_line[self.position % 51]
 
 
     
@@ -123,10 +135,25 @@ class SubUnit:
                 clock.tick(1) # Limit the number of frame per second
                 self.position += 1
 
-                if self.position < 48 or (move_steps + self.position == 53) :
+                if self.position < 51  or (move_steps + self.position <= 56) :
                     self.blit()
                     # TODO -> msg daalna hai --> "Can't move ahead becuase of less number of move_steps
                 blit_everything_updated()
+            if self.check_collision():
+                parent_oject = self.get_parent_object
+                parent_oject.generate_random_number_and_then_move(random_number_to_be_removed = move_steps)
+                blit_everything_updated()
+
+
+
+    def check_collision(self):
+        other_players = [player for player in players if player.colour != self.colour]
+        for other_player in other_players:
+            for sub_unit in other_player.sub_units.values():
+                if sub_unit.position + sub_unit.initial_pos == self.position + self.initial_pos:
+                    sub_unit.position = -1
+                    return True
+        return False
 
     @_place_black_box
     def blit_random_number(self , random_num):
@@ -138,7 +165,13 @@ class SubUnit:
         SCREEN.blit(text , (200 , 620))
         pygame.display.update()
 
-
+    @property
+    def get_parent_object(self):
+        parent_mapper = {
+            self.GREEN : players[0]   , self.YELLOW : players[1] , 
+            self.BLUE  : players[2]   , self.RED    : players[3]    ,
+        }
+        return parent_mapper[self.colour]
         
 
 # *=============================================class SubUnit ENDS========================================================*                
@@ -162,27 +195,58 @@ class Player(SubUnit):
             1 : self.sub_unit_1 , 2 : self.sub_unit_2 , 
             3 : self.sub_unit_3 , 4 : self.sub_unit_4 , 
         }
+        self.random_list = []
     
 
     def blit_sub_units(self):
         self.sub_unit_1.blit()
         
-    def generate_random_number_and_then_move(self):
-        random_num = random.randint(1 , 6)
-        random_number_msg = ("Random Number is :  " + str(random_num) , (200 , 620)) 
+    def generate_random_number_and_then_move(self , random_number_to_be_removed = None): # *Here random_number_to_be_removed is only used when a sub_unit collide with another player's sub_unit
+
+        if random_number_to_be_removed is not None:
+            self.random_list.remove(random_number_to_be_removed)
+        
+        # random_num = random.randint(1 , 6)
+        # random_number_msg = ("Random Number is :  " + str(random_num) , (200 , 620)) 
         warning_msg       = ("None of your sub_units is out from home" , (110 , 660))
 
-        all_sub_units_at_home , availables =  self.check_if_any_sub_unit_is_available_to_move() 
-        if all_sub_units_at_home and random_num == 6: 
-            self.blit_messages( random_number_msg )
-            self.move_decider(random_num)
-        elif not all_sub_units_at_home:
-            self.blit_messages( random_number_msg )
-            self.move_decider(random_num)
-        else:
-            self.blit_messages( random_number_msg  , warning_msg  )
-            return 
-        # self.move_decider(6)
+        for i in range(3):
+            random_num = random.randint(1 , 6)
+            self.random_list.append(random_num)
+            string = ",".join ([str(val) for val in self.random_list])
+            random_number_msg = ("Random numbers : " + string , (150 , 620))
+            self.blit_messages(random_number_msg)
+
+            if random_num != 6:
+                break
+            self.press_space_key_to_generate_next_random_number()
+
+        
+
+        if sum(self.random_list) == 18:
+            # TODO : yha pe ek msg daalna hai [you have got triple six means lost this turn , better luck next time]
+            return
+
+        while len(self.random_list) != 0:   
+                if len(self.random_list) > 1:
+                    random_num = self.choose_val_from_random_list()
+                    # TODO : in case user press a number which is not in his random list
+                elif len(self.random_list) == 1:
+                    random_num = self.random_list[0]
+
+                all_sub_units_at_home , availables =  self.check_if_any_sub_unit_is_available_to_move() 
+                
+                if all_sub_units_at_home and random_num == 6: 
+                    self.blit_messages( random_number_msg )
+                    self.move_decider(random_num)
+                elif not all_sub_units_at_home:
+                    self.blit_messages( random_number_msg )
+                    self.move_decider(random_num)
+                else:
+                    self.blit_messages( random_number_msg  , warning_msg  )
+            
+        
+    # self.move_decider(6)
 
     def move_decider(self , random_num):
         """
@@ -193,7 +257,6 @@ class Player(SubUnit):
         print(f"Random number is {random_num} and colour is {self.colour}")
         # self.blit_random_number(random_num)
 
-
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -203,19 +266,29 @@ class Player(SubUnit):
                     if event.key == pygame.K_KP1 or event.key == pygame.K_1:
                         self.move(1 , random_num)
                         print("1 is pressed")
-                        return
+                        self.random_list.remove(random_num) # Removing the number that is used 
+                        return                         
+
                     elif event.key == pygame.K_KP2 or event.key == pygame.K_2:
                         self.move(2 , random_num)
                         print("2 is pressed")
-                        return
+                        self.random_list.remove(random_num) # Removing the number that is used 
+                        return  
+
+
                     elif event.key == pygame.K_KP3 or event.key == pygame.K_3:
                         self.move(3 ,  random_num)
                         print("3 is pressed")
-                        return
+                        self.random_list.remove(random_num) # Removing the number that is used 
+                        return  
+
                     elif event.key == pygame.K_KP4 or event.key == pygame.K_4:
                         self.move(4 , random_num)
                         print("4 is pressed") 
-                        return 
+                        self.random_list.remove(random_num) # Removing the number that is used 
+                        return  
+
+
     
     def check_if_any_sub_unit_is_available_to_move(self):
         """
@@ -275,8 +348,55 @@ class Player(SubUnit):
     def blit_all_sub_units(self):
         for key , sub_unit in self.sub_units.items():
             sub_unit.blit()
+        
+    def press_space_key_to_generate_next_random_number(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:\
+                    return
 
+    def choose_val_from_random_list(self):
 
+        string = ",".join ([str(val) for val in self.random_list])
+        random_number_msg = ("Random numbers : " + string , ( 150 , 620 ))
+        select_msg = ("Select value you want to use : "   , ( 160 , 640 ))   
+        self.blit_messages(select_msg , random_number_msg)
+
+        while True:
+                 for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        exit()
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_KP1 or event.key == pygame.K_1:
+                            print("1 is pressed")
+                            return 1                       
+
+                        elif event.key == pygame.K_KP2 or event.key == pygame.K_2:
+                            print("2 is pressed")
+                            return 2 
+
+                        elif event.key == pygame.K_KP3 or event.key == pygame.K_3:
+                            print("3 is pressed")
+                            return 3 
+
+                        elif event.key == pygame.K_KP4 or event.key == pygame.K_4:
+                            print("4 is pressed") 
+                            return 4            
+
+                        elif event.key == pygame.K_KP5 or event.key == pygame.K_5:
+                            print("5 is pressed") 
+                            return 5    
+                            
+                        elif event.key == pygame.K_KP6 or event.key == pygame.K_6:
+                            print("6 is pressed") 
+                            return 6      
+                        else:
+                            # TODO : add a msg -> selected random value to be used is not in your random_list
+                            pass
 # *=============================================class Player ENDS========================================================*                
 
 
