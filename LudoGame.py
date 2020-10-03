@@ -202,8 +202,13 @@ class SubUnit:
     def check_collision(self):
         """
         >>> This function checks if current sub_unit is at same position of any other sub_unit[of different colour] 
-            >>> if if finds any two sub_units of different colours at same position the it : returns True else : False
+            >>> if a sub_unit is at home then return False , because no collision can happen there
+            >>> if  finds any two sub_units of different colours at same position the it : returns True else : False
         """
+
+        if (self.position + self.initial_pos) in self.map_initial_pos.values(): 
+            return False
+
         other_players = [player for player in players if player.colour != self.colour]
         for other_player in other_players:
             for sub_unit in other_player.sub_units.values():
