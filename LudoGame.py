@@ -117,10 +117,18 @@ class SubUnit:
         self.end_line    = self.end_mapper[colour]
         self.is_active   = True # will be changed to False when sub_unit reaches target
         self.position    = 0
+        self.target_number = 56
         if colour == 'BLUE':
-            self.position = 12
+            self.position = 47
         elif colour == 'RED':
-            self.position = 14
+            self.position = 54
+
+
+    # *----------------------------------------------------------------------------------* #
+
+
+    def __str__(self):
+        return str(vars(self))
 
 
     # *----------------------------------------------------------------------------------* #
@@ -180,13 +188,25 @@ class SubUnit:
 
         else:
             for i in range(move_steps):
-                clock.tick(1) # Limit the number of frame per second
-                self.position += 1
-
-                if self.position < 51  or (move_steps + self.position <= 56) :
+                
+                if self.position != self.target_number - 1:
+                    clock.tick(1) # Limit the number of frame per second
+                    self.position += 1
                     self.blit()
+                    blit_everything_updated()
+                    # if self.position < 51  or (move_steps + self.position <= self.target_number) :
                     # TODO -> msg daalna hai --> "Can't move ahead becuase of less number of move_steps
-                blit_everything_updated()
+                else:
+                    self.is_active = False
+                    parent_oject = self.get_parent_object
+                    blit_everything_updated()
+                    pygame.display.update()
+                    print()
+                    print()
+                    self.press_space_key_to_generate_next_random_number()
+                    parent_oject.generate_random_number_and_then_move(random_number_to_be_removed = move_steps)
+
+
             if self.check_collision():
                 parent_oject = self.get_parent_object
                 blit_everything_updated()
@@ -265,6 +285,22 @@ class SubUnit:
                     return       
         
 
+    @_place_black_box
+    def blit_messages(self , *args):
+        """
+        >>> This function blits any number of messages 
+                >>> message must be in format -> (msg_text , (x , y))
+        """
+        for msg in args:
+            text , co_ordinates = msg
+            x , y = co_ordinates
+            font = pygame.font.SysFont('comicsansms' , 20)
+            text = font.render(text ,  True , self.colour)
+            SCREEN.blit(text , (x , y))
+            pygame.display.update()
+            clock.tick(1)
+
+
 # *=============================================class SubUnit ENDS========================================================*                
 
 
@@ -292,8 +328,19 @@ class Player(SubUnit):
             3 : self.sub_unit_3 , 4 : self.sub_unit_4 , 
         }
         self.random_list = []
+        self.target_number = 56
     
         
+    # *----------------------------------------------------------------------------------* #
+
+
+    def __str__(self):
+        string =""
+        for sub_unit in self.sub_units:
+            string += str(vars(sub_unit))
+        return string
+
+
     # *----------------------------------------------------------------------------------* #
         
 
@@ -356,6 +403,7 @@ class Player(SubUnit):
                     random_num = self.random_list[0]
 
                 all_sub_units_at_home , availables =  self.check_if_any_sub_unit_is_available_to_move() 
+
                 
                 if all_sub_units_at_home and random_num == 6: 
                     self.blit_messages( random_number_msg )
@@ -453,19 +501,61 @@ class Player(SubUnit):
         sub_unit_object = self.sub_units[sub_unit_number]
         all_sub_units_at_home , available_sub_units = self.check_if_any_sub_unit_is_available_to_move()
         random_number_msg = ("Random Number is : " +  str(move_steps) , (200 , 620))  
-        warning_msg       = ("Try another one !!!" , (240 , 660))  
+        warning_msg       = ("Try another one !!!" , (255 , 660))  
+        extra_moves_problem_msg = ("Extra moves problem!!!" , (250 , 660))
 
+        
 
-        if sub_unit_object.position == -1 : # If sub_unit is at home
-            if move_steps == 6:
-                sub_unit_object.move_(move_steps)
-            else:
-                self.blit_messages( random_number_msg  , warning_msg )
-                self.move_decider(move_steps)
+        if sub_unit_object.position + move_steps <= self.target_number:
+            
+                if sub_unit_object.position == -1 and sub_unit_object.is_active: # If sub_unit is at home
+                    if move_steps == 6:
+                        sub_unit_object.move_(move_steps)
+                    else:
+                        self.blit_messages( random_number_msg  , warning_msg )
+                        self.move_decider(move_steps)
+                else:
+                    sub_unit_object.move_(move_steps)
+
         else:
-            sub_unit_object.move_(move_steps)
+                is_available , available_sub_units = self.check_if_any_sub_unit_is_available_to_move()
+                print()
+                print()
+                print()
+                print()
+                print()
+                print()
+                print()
+                print()
+                print()
+                print(available_sub_units)
+                print()
+                print()
+                print()
+                print()
+                print()
+                print()
+                print()
+                print()
+                if is_available:
+                    self.blit_messages(random_number_msg , extra_moves_problem_msg )
+                else:
+                    # self.random_list = []
+                    self.blit_messages(("Skipping your turn !!!" , (255 , 660)))
+                    return
+                
 
 
+
+
+
+
+    # *----------------------------------------------------------------------------------* #
+
+    def check_if_any_sub_unit_is_available_to_move_in_end_line(self):
+        availables = [sub_unit for sub_unit in self.sub_units.values() if sub_unit.is_active]    
+        return len(availables) != 0 , availables
+    
     # *----------------------------------------------------------------------------------* #
 
 
