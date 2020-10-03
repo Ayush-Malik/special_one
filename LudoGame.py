@@ -118,9 +118,9 @@ class SubUnit:
         self.is_active   = True # will be changed to False when sub_unit reaches target
         self.position    = 0
         print(colour)
-        # if colour == 'RED':
-        #     self.position = 12
-        # elif colour == 'GREEN':
+        if colour == 'BLUE':
+            self.position = 12
+        # elif colour == 'RED':
         #     self.position = 14
 
 
@@ -274,6 +274,7 @@ class Player(SubUnit):
     >>> in the object of Player class , it hold 4 sub_units of same colour 
     """
     def __init__(self , colour): 
+        self.colour_name= colour
         self.colour     = self.Colours[colour]
         self.sub_unit_1 = SubUnit(colour , 1)
         self.sub_unit_2 = SubUnit(colour , 2)
@@ -320,8 +321,8 @@ class Player(SubUnit):
         warning_msg       = ("None of your sub_units is out from home" , (110 , 660))
 
         for i in range(3):
-            random_num = random.randint(1 , 6)
-            # random_num = 1
+            # random_num = random.randint(1 , 6)
+            random_num = 1
             self.random_list.append(random_num)
             string = ",".join ([str(val) for val in self.random_list])
             random_number_msg = ("Random numbers : " + string , (150 , 620))
@@ -359,7 +360,21 @@ class Player(SubUnit):
                 else:
                     self.blit_messages( random_number_msg  , warning_msg  )
         
+        if random_number_to_be_removed is not None: # very very imp --> if collision has occured previously
+            for i in range(50):
+                print("MOVE_NUMBER PASSED" , move_number)
+            main(move_number = self.get_next_colour_index())
         
+
+    # *----------------------------------------------------------------------------------* #
+
+    
+    def get_next_colour_index(self):
+        player_colours = ['GREEN' , 'YELLOW' , 'BLUE' , 'RED']
+        next_colour_index = (player_colours.index(self.colour_name) + 1) % len(player_colours)
+        return next_colour_index
+
+                
     # *----------------------------------------------------------------------------------* #
 
 
@@ -576,19 +591,31 @@ move_number = 0
 
 
 blit_everything_updated()
-# Main LOOP
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            print("Space key is pressed")
-            current_player = players[move_number % len(players)]
-            current_player.generate_random_number_and_then_move()
-            move_number += 1
-    # blit_everything_updated()
-    pygame.display.update()
+
+def main(move_number = None):
+    if move_number is None:
+        move_number = 0
+        print("This is the turn of " , move_number)
+    else:
+        print("BAARI HAI : " , move_number)
+
+    # Main LOOP
+    while True:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                print("Space key is pressed")
+                current_player = players[move_number % len(players)]
+                current_player.generate_random_number_and_then_move()
+                move_number += 1
+        # blit_everything_updated()
+        pygame.display.update()
+
+if __name__ == "__main__":
+    main()
 
 # ?-------------------------------------------------------------------------------------------------------------?
 
