@@ -117,11 +117,10 @@ class SubUnit:
         self.end_line    = self.end_mapper[colour]
         self.is_active   = True # will be changed to False when sub_unit reaches target
         self.position    = 0
-        print(colour)
         if colour == 'BLUE':
             self.position = 12
-        # elif colour == 'RED':
-        #     self.position = 14
+        elif colour == 'RED':
+            self.position = 14
 
 
     # *----------------------------------------------------------------------------------* #
@@ -205,14 +204,17 @@ class SubUnit:
             >>> if a sub_unit is at home then return False , because no collision can happen there
             >>> if  finds any two sub_units of different colours at same position the it : returns True else : False
         """
+        print("Collision func me hu")
 
         if (self.position + self.initial_pos) in self.map_initial_pos.values(): 
             return False
 
+        print("pehla if pass hua hai")
         other_players = [player for player in players if player.colour != self.colour]
         for other_player in other_players:
             for sub_unit in other_player.sub_units.values():
-                if sub_unit.position + sub_unit.initial_pos == self.position + self.initial_pos:
+                print((sub_unit.position + sub_unit.initial_pos) % 52 , (self.position + self.initial_pos) % 52)
+                if (sub_unit.position + sub_unit.initial_pos) % 52 == (self.position + self.initial_pos) % 52:
                     sub_unit.position = -1
                     return True
         return False
@@ -300,7 +302,7 @@ class Player(SubUnit):
         >>> if random_number_to_be_removed is not None then remove given random_number[USED only when two sub_units collide]
         >>> for loop to give atmost 3 turns to a Player 
         >>> if sum(random_list) is 18 , means player got(6 , 6 , 6) SO return [turn is eliminated]
-        >>> while there is some number in random_list:
+        >>> while there is some number in random_list AND sum(random_list) <= 56 <important condition>:
                     >>> if there are more than 1 random_number in random_list :
                         >>> Ask user which number he wants to use
                     >>> elif only 1 number is present inside random_list:
@@ -326,8 +328,8 @@ class Player(SubUnit):
         warning_msg       = ("None of your sub_units is out from home" , (110 , 660))
 
         for i in range(3):
-            # random_num = random.randint(1 , 6)
-            random_num = 1
+            random_num = random.randint(1 , 6)
+            # random_num = 1
             self.random_list.append(random_num)
             string = ",".join ([str(val) for val in self.random_list])
             random_number_msg = ("Random numbers : " + string , (150 , 620))
@@ -341,13 +343,12 @@ class Player(SubUnit):
             # TODO : yha pe ek msg daalna hai [you have got triple six means lost this turn , better luck next time]
             return
 
-        while len(self.random_list) != 0:   
-                print("CURRRENT" , self.random_list)
+        while len(self.random_list) != 0 and sum(self.random_list) <= 56:   
                 string = ",".join ([str(val) for val in self.random_list])
                 random_number_msg = ("Random numbers : " + string , (150 , 620))
                 self.blit_messages(random_number_msg)
 
-                print("****" , self.random_list)
+                print("RANDOM LIST => " , self.random_list)
                 if len(self.random_list) > 1:
                     random_num = self.choose_val_from_random_list()
                     # TODO : in case user press a number which is not in his random list
@@ -591,6 +592,9 @@ players = [
     green_player , yellow_player,
     blue_player  , red_player   ,
 ]
+# players = [
+#     green_player , red_player
+# ]
 move_number = 0
 #******************************
 
@@ -606,16 +610,15 @@ def main(move_number = None):
 
     # Main LOOP
     while True:
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                print("Space key is pressed")
                 current_player = players[move_number % len(players)]
                 current_player.generate_random_number_and_then_move()
                 move_number += 1
+                print("----------NEXT-TURN-----------")
         # blit_everything_updated()
         pygame.display.update()
 
